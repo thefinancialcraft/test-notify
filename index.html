@@ -10,67 +10,82 @@
   <button onclick="requestPermission()">Allow Notifications</button>
 
   <script>
-     const firebaseConfig = {
-    apiKey: "AIzaSyBcbc5HEqoB3T6iXFsuKu2l25FJEgJSwGw",
-    authDomain: "tfc-connect.firebaseapp.com",
-    projectId: "tfc-connect",
-    storageBucket: "tfc-connect.firebasestorage.app",
-    messagingSenderId: "259719401882",
-    appId: "1:259719401882:web:9d1c8418e7baea37ff2a23",
-    measurementId: "G-L6NX6YYCNB"
-  };
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcbc5HEqoB3T6iXFsuKu2l25FJEgJSwGw",
+      authDomain: "tfc-connect.firebaseapp.com",
+      projectId: "tfc-connect",
+      storageBucket: "tfc-connect.appspot.com",
+      messagingSenderId: "259719401882",
+      appId: "1:259719401882:web:9d1c8418e7baea37ff2a23",
+      measurementId: "G-L6NX6YYCNB"
+    };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
 
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/test-notify/firebase-messaging-sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered:', registration);
+          messaging.useServiceWorker(registration);
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+    } else {
+      console.warn("Service Workers are not supported in this browser.");
+    }
+
+    // Request permission and get token
     function requestPermission() {
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
           messaging.getToken({
             vapidKey: "BDTTaD42JvQkx8h9qDGcwaq8CX-CZLFTU1bFPk1bcY5xpY7Iw02AzmY9i3IKs0genf1QqUZtAd8a2LbOA6YG5_w"
           }).then((token) => {
-            console.log("Token:", token);
+            console.log("✅ Token:", token);
             saveTokenToSheet(token);
+          }).catch((err) => {
+            console.error("❌ Failed to get token:", err);
+            alert("Error getting token: " + err.message);
           });
         } else {
-          alert("Permission not granted!");
+          alert("🔒 Notification permission not granted.");
         }
       });
     }
 
-
+    // Send token to Apps Script backend
     async function saveTokenToSheet(token) {
-  try {
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbyKjKJNiLbG7CIh6CLwhhGX9d3Rlcsixgo0Yx_pYCGGaJ9jVCLmZifA7fM1scxurybg/exec";
+      try {
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbyKjKJNiLbG7CIh6CLwhhGX9d3Rlcsixgo0Yx_pYCGGaJ9jVCLmZifA7fM1scxurybg/exec";
+        const data = new URLSearchParams();
+        data.append('action', 'saveNotifyToken');
+        data.append('token', token);
 
-    const data = new URLSearchParams();
-    data.append('action', 'saveNotifyToken');
-    data.append('token', token);
+        const backendResponse = await fetch(scriptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: data
+        });
 
-    const backendResponse = await fetch(scriptUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: data
-    });
-
-    const result = await backendResponse.json();
-    console.log(result);
-    if (result.status === 'success') {
-      alert("✅ Token successfully saved!");
-    } else {
-      alert("❌ Failed: " + result.message);
+        const result = await backendResponse.json();
+        console.log("🔁 Server Response:", result);
+        if (result.status === 'success') {
+          alert("✅ Token successfully saved to Sheet!");
+        } else {
+          alert("❌ Server Error: " + result.message);
+        }
+      } catch (error) {
+        console.error("⚠️ Error sending token:", error);
+        alert("Something went wrong while sending the token.");
+      }
     }
-
-  } catch (error) {
-    console.error("⚠️ Error sending token:", error);
-    alert("Something went wrong while sending the token.");
-  }
-}
-
-
   </script>
-  <!-- <script src="firebase-messaging-sw.js"></script> -->
 </body>
 </html>
