@@ -38,10 +38,37 @@
       });
     }
 
-    function saveTokenToSheet(token) {
-      google.script.run.saveToken(token);
-      alert("Token sent to server.");
+
+
+    async function saveTokenToSheet(token) {
+    // Start time to calculate response duration
+    try {
+        // Fetch backend URL from config
+        const response = await fetch('/TFC-Connect/App/config.json');
+        const config = await response.json();
+        const scriptUrl = config.scriptUrl;
+
+        // Prepare data
+        const data = new URLSearchParams();
+        data.append('action', 'saveNotifyToken');
+        data.append('token', token);
+
+        // Send request to backend
+        const backendResponse = await fetch(scriptUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: data
+        });
+
+        const result = await backendResponse.json();
+        alert("Token sent to server.");
+
+    } catch (error) {
+        console.error("Error fetching backend data:", error);
     }
+}
   </script>
   <!-- <script src="firebase-messaging-sw.js"></script> -->
 </body>
