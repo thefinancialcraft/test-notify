@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Push Notification Test</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+</head>
+<body>
+  <h2>Push Notification Test</h2>
+  <button onclick="requestPermission()">Allow Notifications</button>
+
+  <script>
+     const firebaseConfig = {
+    apiKey: "AIzaSyBcbc5HEqoB3T6iXFsuKu2l25FJEgJSwGw",
+    authDomain: "tfc-connect.firebaseapp.com",
+    projectId: "tfc-connect",
+    storageBucket: "tfc-connect.firebasestorage.app",
+    messagingSenderId: "259719401882",
+    appId: "1:259719401882:web:9d1c8418e7baea37ff2a23",
+    measurementId: "G-L6NX6YYCNB"
+  };
+
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    function requestPermission() {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          messaging.getToken({
+            vapidKey: "BDTTaD42JvQkx8h9qDGcwaq8CX-CZLFTU1bFPk1bcY5xpY7Iw02AzmY9i3IKs0genf1QqUZtAd8a2LbOA6YG5_w"
+          }).then((token) => {
+            console.log("Token:", token);
+            saveTokenToSheet(token);
+          });
+        } else {
+          alert("Permission not granted!");
+        }
+      });
+    }
+
+    function saveTokenToSheet(token) {
+      google.script.run.saveToken(token);
+      alert("Token sent to server.");
+    }
+  </script>
+  <!-- <script src="firebase-messaging-sw.js.js"></script> -->
+</body>
+</html>
